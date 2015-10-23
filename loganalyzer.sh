@@ -18,6 +18,7 @@ sortedips=$(mktemp "sortedips.XXXXX")
 minlist=$(mktemp   "min-list.XXXXX")
 dates=$(mktemp   "date.XXXXX")
 totalbytes=$(mktemp   "bytes.XXXXX")
+useragents=$(mktemp   "useragentdata.XXXXX")
 uris=$(mktemp   "uri.XXXXX")
 sorteddate=$(mktemp   "sorteddate.XXXXX")
 transfers=$(mktemp   "transfers.XXXXX")
@@ -39,14 +40,14 @@ linebreak() {
   linebreak
 
 function cleanUp() {
-	for i in ${tmpfiles[@]}
-	do
-	  if [[ -f "${i}" ]]
+        for i in ${tmpfiles[@]}
+        do
+          if [[ -f "${i}" ]]
     then
       rm -r "${i}"
-	  fi
-	done
-	find . -maxdepth 1 -iname "*.txt" -type f -exec rm -f {} \;
+          fi
+        done
+        find . -maxdepth 1 -iname "*.txt" -type f -exec rm -f {} \;
 }
 
 trap cleanUp EXIT
@@ -56,55 +57,24 @@ trap cleanUp EXIT
 # something we can  #
 # work with         #
 #####################
+#reformat(){
+#  sed -e 's/- -//g' -e 's/\s/!/g' -e 's/\"//g' -e 's/\[//g' -e 's/\]//g' -e 's/compatible;//g' -e 's/Intel!Mac!OS!X!/Intel_Mac_OSX/g' -e 's/\(Windows\)!\(NT\)!/\1_\2_/g' -e 's/!!/!/g' -e 's/;!/_/g' -e 's/!like!/like_/g' -e 's/[(]!/(/g' -e 's/%/%%/g' "$file" >> "$newfile"
+#}
 reformat(){
-  sed -e 's/- -//g' -e 's/\s/!/g' -e 's/\"//g' -e 's/\[//g' -e 's/\]//g' -e 's/compatible;//g' -e 's/Intel!Mac!OS!X!/Intel_Mac_OSX/g' -e 's/\(Windows\)!\(NT\)!/\1_\2_/g' -e 's/!!/!/g' -e 's/;!/_/g' -e 's/!like!/like_/g' -e 's/[(]!/(/g' -e 's/%/%%/g' "$file" >> "$newfile"
+  sed -e 's/- - //g' -e 's/"/!/g' -e 's/\[//g' -e 's/\]//g' -e 's/\([0-9]\)\s\([0-9]\)/\1!\2/g' -e 's/compatible;//g' -e 's/Intel Mac OS X /Intel_Mac_OSX/g' -e 's/\(Windows\) \(NT\) /\1_\2_/g' -e 's/ !/!/g' -e 's/! /!/g' -e 's/!!/!/g' -e 's/;!/_/g' -e 's/[(]!/(/g' -e 's/\([0-9]\) \+/\1!/g'  -e 's/%/%%/g' -e 's/!-!/!NULL!/g' -e 's/-!/NULL!/g' "$file" >> "$newfile"
+}
+
+logarray() {
+  while IFS=! read -r ip date tz request response bytes referrer useragent; do
+    echo "${ip}" "${request}" "${response}" >> $minlist
+                echo "${useragent}" >> $useragents
+                echo "${date}" >> $dates
+                echo "${ip}" "${date}" "${request}" "${response}" "${bytes}" "${referrer}" >> $totalbytes
+        done < "$newfile"
 }
 
 log(){
     [ ! -z "${debug}" ] && echo "$*"
-}
-##############################
-# read newfile into an array #
-##############################
-logarray() {
-  while IFS=! read -r ip date tz method uri http_ver response bytes referrer ua_prod ua_os ua_comment1 ua_comment2; do
-    echo "${ip}" "${method}" "${response}" "${uri}" >> $minlist
-#  echo "${ua_prod}" >> useragent.txt
-  if [[ "${ua_os}" =~ Windows ]]
-      then
-    echo "${ip}" "${ua_os}" "${ua_comment1}" >> win_ua.txt
-    elif [[ "${ua_os}" =~ Android || "${ua_comment1}" =~ Android ]]
-      then
-        echo "${ip}" "${ua_os}" "${ua_comment1}" >> and_ua.txt
-    elif [[ "${ua_os}" != Android && "${ua_comment1}" != Android ]] && [[ "${ua_os}" =~ Linux || "${ua_os}" =~ X11 ]]
-      then
-    echo "${ip}" "${ua_os}" "${ua_comment1}" >> lin_ua.txt
-    elif [[ "${ua_os}" =~ iPhone ]]
-      then
-    echo "${ip}" "${ua_os}" "${ua_comment1}" >> iph_ua.txt
-    elif [[ "${ua_prod}" =~ BlackBerry || "${ua_os}" =~ BlackBerry ]]
-      then
-    echo "${ip}" "${ua_prod}" "${ua_os}" "${ua_comment1}" >> bla_ua.txt
-    elif [[ "${ua_os}" =~ Bot ||  "${ua_os}" =~ bot ||  "${ua_os}" =~ Yahoo ||  "${ua_os}" =~ spider  ||  "${ua_comment1}" =~ Spider ||  "${ua_comment1}" =~ Crawler ||  "${ua_comment1}" =~ FeedFetcher ]]
-      then
-  #log "BOT:" "${ip}" "${method}" "${response}" "${uri}" "${ua_os}" "${ua_comment1}"
-    echo "${ip}" "${ua_os}" "${ua_comment1}" >> bot_ua.txt
-    elif [[ "${ua_os}" =~ Mac ]];
-      then
-    echo "${ip}" "${ua_os}" "${ua_comment1}" >> mac_ua.txt
-    else
-  #log "UNKNOWN" "${ip}" "${method}" "${response}" "${uri}" "${ua_os}" "${ua_comment1}"
-    echo "${ip}" "${uri}" "${ua_os}" "${ua_comment1}" >> unknown_useragent.txt
-  fi
-#  echo "${method}" >> method.txt
-#  echo "${uri}" >> $uris
-  echo "${date}" >> $dates
-#  echo "${referr}" >> referrer.txt
-  echo "${ip}" "${date}" "${method}" "${response}" "${bytes}" "${uri}" >> $totalbytes
-#	log echo "${ip}" "${date}" "${method}" "${response}" "${bytes}" "${uri}"
-#  echo "${response}" >> response.txt
-#  echo "${http_ver}" >> http_ver.txt
- done < "$newfile"
 }
 
 ###########################################
@@ -116,7 +86,7 @@ countOS() {
   uas=(win_ua and_ua lin_ua iph_ua bla_ua bot_ua mac_ua)
   for file in "${uas[@]}"
      do
-						 cat ${file}.txt | sort | uniq -c > ${file}gent.txt
+                                                 cat ${file}.txt | sort | uniq -c > ${file}gent.txt
   done
   wc=$(grep -c "Windows" win_uagent.txt)
   lc=$(grep -c "Linux" lin_uagent.txt)
@@ -246,19 +216,19 @@ noSuccess(){
 
 diffBytes(){
   format=" %2s %15s %8s %8s %18s\n"
-	sort -u $totalbytes -k6 > $xfersortedbyuri
-	awk -FS=" " '{
-		prev=$0; f4=$4; f5=$5; f6=$6;
-    getline 
+        sort -u $totalbytes -k6 > $xfersortedbyuri
+        awk -FS=" " '{
+                prev=$0; f4=$4; f5=$5; f6=$6;
+    getline
     if ( $4 == f4 && $5 != f5 && $6 == f6 ){
         print prev
-				print $0 >> "testfile.bak"
-      
+                                print $0 >> "testfile.bak"
+
     }
-	}' $xfersortedbyuri
+        }' $xfersortedbyuri
    #   then
  #    printf "| %4s | %15s | %8s | %10s | %s \n" "$ip" "$method" "$response" "$bytes" "$uri"
-#	fi
+#       fi
 }
 
 ########################
@@ -362,7 +332,7 @@ tableDiffBytes() {
   printf "${cyan}The following are similar requests that resulted in anomalous bytecounts\n${normal}"
   printf "${cyan} Please note it is not known which is correct, or if these are truly anomalies.\n${normal}"
   printf "${bold}| IP %13s| Method %s | Response %s| %s Total Bytes | URI %s ${normal}\n"
-	diffBytes
+        diffBytes
 }
 
 
@@ -393,7 +363,7 @@ displaystats() {
       xfer)
                 tableTopTalkers
                 linebreak
-		#tableDiffBytes # Not accurate yet so disabled.
+        #                                                       tableDiffBytes # Not accurate yet so disabled.
          ;;
       os)
       countOS
