@@ -1,6 +1,6 @@
 # log-analyzer
-A very basic access log analyzer
-USAGE: loganalyzer.sh <logfile> [ uri | method | hits | response | xfer | os ] 
+A very basic access log analyzer</br>
+USAGE: loganalyzer.sh <logfile> [ uri | method | hits | response | xfer | os ] </br>
 TODO: diff of byte count requests for same resource, unusual User Agent info, redirect analysis, date time analysis, clean up and optimize code, change os option to ua
 
 At this time the options will do the following:
