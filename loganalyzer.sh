@@ -194,10 +194,6 @@ getSuspectUri(){
         fi
 }
 
-#printSuspectUri() {
-#       while read -r
-#}
-
 getInfoOfUri() {
   gawk 'BEGIN{print "begin"}{print}END{print "end\n"}' "${onlyips}" >  ip.txt
   netcat whois.cymru.com 43 < $onlyips | sort -n >> results.txt
@@ -206,10 +202,18 @@ getInfoOfUri() {
     then
       sed -i -e 's/\(\.\)\, /\1/g' -e 's/\([a-z\.\,]\) \([A-Za-z]\)/\1_\2/g' -e 's/\(\.\) \([A-Za-z]\)/\1_\2/g' results.txt
                         sed -i -e 's/,/ /g' results.txt
-      sort -k 2 "$suspect" > sortedsuspect.txt
-      sort -k 2 "results.txt" > sortedresults.txt
+      sort -k 2 -o  "$suspect" "$suspect"
+      sort -k 2 -o results.txt results.txt
       awk '{getline f1 <"sortedsuspect.txt"; print f1, $1 " "$5" "$6 $7 $8 $9 $10 $11 $12 $13" "$14}' < sortedresults.txt > suspecturifinal.txt
   fi
+}
+
+printSuspectUri() {
+  format="| %4s | %15s | %50s | %7s | %10s | %25s %5s | %5s\n"
+  while read -r hits ipadd uri method asn asnorg cc
+    do
+      printf "$format" "$hits" "$ipadd" "$uri" "$method" "$asn" "$asnorg" "$cc"
+    done < suspecturifinal.txt
 }
 
 reLoaded(){
