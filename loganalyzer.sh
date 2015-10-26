@@ -204,7 +204,7 @@ getInfoOfUri() {
                         sed -i -e 's/,/ /g' results.txt
       sort -k 2 -o  "$suspect" "$suspect"
       sort -k 2 -o results.txt results.txt
-      awk '{getline f1 <"sortedsuspect.txt"; print f1, $1 " "$5" "$6 $7 $8 $9 $10 $11 $12 $13" "$14}' < sortedresults.txt > suspecturifinal.txt
+      awk -v var="$suspect" '{getline f1 <var; print f1, $1 " "$5" "$6 $7 $8 $9 $10 $11" "$12}' < results.txt > suspecturifinal.txt
   fi
 }
 
