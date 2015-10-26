@@ -13,19 +13,22 @@ set -e
 #####################
 # V A R I A B L E S #
 #####################
+tmp=/tmp
 newfile=$(mktemp   "reformatted.XXXXX")
 sortedips=$(mktemp "sortedips.XXXXX")
 minlist=$(mktemp   "min-list.XXXXX")
-dates=$(mktemp   "date.XXXXX")
+dates=$(mktemp     "date.XXXXX")
 totalbytes=$(mktemp   "bytes.XXXXX")
-useragents=$(mktemp   "useragentdata.XXXXX")
-uris=$(mktemp   "uri.XXXXX")
+onlyips=$(mktemp "onlyips.XXXXX")
+uris=$(mktemp      "uri.XXXXX")
 sorteddate=$(mktemp   "sorteddate.XXXXX")
-transfers=$(mktemp   "transfers.XXXXX")
+suspect=$(mktemp   "suspecturis.XXXXX")
+transfers=$(mktemp "transfers.XXXXX")
 transferred=$(mktemp   "transferred.XXXXX")
-transferredb=$(mktemp   "transferredb.XXXXX")
+transferredb=$(mktemp  "transferredb.XXXXX")
 xfersortedbyuri=$(mktemp   "xfersortedbyuri.XXXXX")
-tmpfiles=("$newfile" "$sortedips" "$minlist" "$dates" "$totalbytes" "$uris" "$sorteddate" "$transfers" "$transferred" "$transferredb" "$xfersortedbyuri")
+useragents=$(mktemp    "useragent.XXXXX")
+tmpfiles=("$newfile" "$minlist" "$dates" "$totalbytes" "$uris" "$sorteddate" "$transfers" "$transferred" "$transferredb" "$xfersortedbyuri" "$suspect" "$useragents" "$onlyips" "$sortedips")
 file=$1
 bold=$(tput bold)
 cyan=$(tput setf 3)
@@ -40,14 +43,14 @@ linebreak() {
   linebreak
 
 function cleanUp() {
-        for i in ${tmpfiles[@]}
-        do
-          if [[ -f "${i}" ]]
+  for i in ${tmpfiles[@]}
+  do
+    if [[ -f "${i}" ]]
     then
       rm -r "${i}"
-          fi
-        done
-        find . -maxdepth 1 -iname "*.txt" -type f -exec rm -f {} \;
+    fi
+  done
+  find . -maxdepth 1 -iname "*.txt" -type f -exec rm -f {} \;
 }
 
 trap cleanUp EXIT
@@ -57,13 +60,14 @@ trap cleanUp EXIT
 # something we can  #
 # work with         #
 #####################
-#reformat(){
-#  sed -e 's/- -//g' -e 's/\s/!/g' -e 's/\"//g' -e 's/\[//g' -e 's/\]//g' -e 's/compatible;//g' -e 's/Intel!Mac!OS!X!/Intel_Mac_OSX/g' -e 's/\(Windows\)!\(NT\)!/\1_\2_/g' -e 's/!!/!/g' -e 's/;!/_/g' -e 's/!like!/like_/g' -e 's/[(]!/(/g' -e 's/%/%%/g' "$file" >> "$newfile"
-#}
 reformat(){
   sed -e 's/- - //g' -e 's/"/!/g' -e 's/\[//g' -e 's/\]//g' -e 's/\([0-9]\)\s\([0-9]\)/\1!\2/g' -e 's/compatible;//g' -e 's/Intel Mac OS X /Intel_Mac_OSX/g' -e 's/\(Windows\) \(NT\) /\1_\2_/g' -e 's/ !/!/g' -e 's/! /!/g' -e 's/!!/!/g' -e 's/;!/_/g' -e 's/[(]!/(/g' -e 's/\([0-9]\) \+/\1!/g'  -e 's/%/%%/g' -e 's/!-!/!NULL!/g' -e 's/-!/NULL!/g' "$file" >> "$newfile"
 }
 
+
+##############################
+# read newfile into an array #
+##############################
 logarray() {
   while IFS=! read -r ip date tz request response bytes referrer useragent; do
     echo "${ip}" "${request}" "${response}" >> $minlist
@@ -72,6 +76,7 @@ logarray() {
                 echo "${ip}" "${date}" "${request}" "${response}" "${bytes}" "${referrer}" >> $totalbytes
         done < "$newfile"
 }
+
 
 log(){
     [ ! -z "${debug}" ] && echo "$*"
@@ -86,7 +91,7 @@ countOS() {
   uas=(win_ua and_ua lin_ua iph_ua bla_ua bot_ua mac_ua)
   for file in "${uas[@]}"
      do
-                                                 cat ${file}.txt | sort | uniq -c > ${file}gent.txt
+             cat ${file}.txt | sort | uniq -c > ${file}gent.txt
   done
   wc=$(grep -c "Windows" win_uagent.txt)
   lc=$(grep -c "Linux" lin_uagent.txt)
@@ -104,7 +109,6 @@ countOS() {
   echo " Bots       : "${botc}" "
   echo " Macintosh  : "${mc}" "
 }
-
 
 #####################################
 # cleanup, reformat, and make array #
@@ -182,19 +186,29 @@ format="| %2s | %15s | %8s | %10s | %s\n"
   fi
 }
 
-suspectUri(){
-  format="| %4s | %15s | %8s | %8s | %43s | %40s\n"
+getSuspectUri(){
   if echo "${uri}" | grep -qE '[^a-zA-Z0-9_\?\/\.\=\&-]'
     then
-      echo ${ip} > iponly.txt
-      gawk 'BEGIN{print "begin"}{print}END{print "end\n"}' iponly.txt >  ip.txt
-      for i in ip.txt
-        do
-          netcat whois.cymru.com 43 < ip.txt | sort -n > results.txt
-        done
-      tail -n +2 results.txt > whois-output.txt
-      printf "$format" "$hits" "$ip" "$method" "$response" "$uri" "$(grep $ip whois-output.txt| awk -F'|' '{print $1"        |"$3 $4 $6 $7 }')\n"
+                        echo "${ip}" >> $onlyips
+                        echo "${hits}" "${ip}" "${uri}" "${method}" >> $suspect
+        fi
+}
 
+#printSuspectUri() {
+#       while read -r
+#}
+
+getInfoOfUri() {
+  gawk 'BEGIN{print "begin"}{print}END{print "end\n"}' "${onlyips}" >  ip.txt
+  netcat whois.cymru.com 43 < $onlyips | sort -n >> results.txt
+  sed -i '/AS Name/d' results.txt
+  if [ -e results.txt ]
+    then
+      sed -i -e 's/\(\.\)\, /\1/g' -e 's/\([a-z\.\,]\) \([A-Za-z]\)/\1_\2/g' -e 's/\(\.\) \([A-Za-z]\)/\1_\2/g' results.txt
+                        sed -i -e 's/,/ /g' results.txt
+      sort -k 2 "$suspect" > sortedsuspect.txt
+      sort -k 2 "results.txt" > sortedresults.txt
+      awk '{getline f1 <"sortedsuspect.txt"; print f1, $1 " "$5" "$6 $7 $8 $9 $10 $11 $12 $13" "$14}' < sortedresults.txt > suspecturifinal.txt
   fi
 }
 
@@ -246,19 +260,21 @@ table403() {
       series403
     done < $sortedips
 }
+
 #########################
 # Table for displaying  #
 # Suspect URI's & WHOIS #
 #########################
 tableSuspectUri() {
   printf "${cyan}Access to the following suspect uri's were attempted. Their ASN, ISP, and Country Code is appended.${normal}\n"
-    printf "${bold}| Hits | IP %13s| Method %1s | Response %s| URI %39s | %s WHOIS  ASN     |  ISP,CC${normal}\n"
-  while read -r hits ip method response uri;
+  printf "${bold}| Hits | IP %13s| Method %1s | URI %39s | Response %8s | %s WHOIS  ASN     |  ISP,CC${normal}\n"
+  while read -r hits ip method uri http_ver response;
     do
-      suspectUri
+      getSuspectUri
     done < $sortedips
-}
+        getInfoOfUri
 
+}
 
 ###########################
 # Table for displaying    #
