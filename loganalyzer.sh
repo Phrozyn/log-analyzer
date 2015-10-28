@@ -120,6 +120,7 @@ logarray
 # sort and grab number of hits, unique #
 # ips, method, response, and uri       #
 ########################################
+getSortedIps() {
 if [ -e $minlist ]
   then
     cat $minlist | sort | uniq -c >> $sortedips
@@ -127,11 +128,13 @@ if [ -e $minlist ]
   printf "The $minlist file was not found.\n"
 
 fi
+}
 
 ########################################
 # sort by date and grab beginning and  #
 # ending dates                         #
 ########################################
+getDates() {
 if [ -e $dates ]
     then
       sort -k 1 $dates > $sorteddate
@@ -141,14 +144,20 @@ if [ -e $dates ]
     else
       printf "The $dates file was not found.\n"
 fi
+}
 
+##############################################
+# Prepare flat files and provide date of log #
+##############################################
+  getSortedIps
+  getDates
   linebreak
 
 ##########################################
 # grab and sort bytes transferred        #
 # date, ips, method, response, and uri   #
 ##########################################
-
+topTalkers() {
 if [ -e $totalbytes ]
   then
     for i in `cat $totalbytes |awk '{print $1}' |sort -u`
@@ -160,6 +169,7 @@ if [ -e $totalbytes ]
     else
       printf " The $totalbytes file was not found.\n"
 fi
+}
 
 series200(){
   format="| %2s | %15s | %8s | %9s | %7s\n"
