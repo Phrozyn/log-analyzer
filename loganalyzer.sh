@@ -259,7 +259,7 @@ table403() {
   rc=$(awk 'END { print s } { s += $1 }' 403_requests.txt)
   printf "There are ${bold}$rc${normal} counts of the ${bold}403: Forbidden${normal} response code. The server has denied access to the resource. \n"
   printf "${bold}| Hits | IP %13s| Method %1s | Response %2s| %s URI ${normal}\n"
-  while read -r hits ip method response uri;
+  while read -r hits ip method uri http_ver response 
     do
       series403
     done < $sortedips
