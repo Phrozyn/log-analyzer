@@ -179,10 +179,10 @@ series403(){
 }
 
 timedOut() {
-format="| %2s | %15s | %8s | %10s | %s\n"
-  if [ "${uri}" = 408 ]
+format="| %5s | %15s | %8s \n"
+  if [ "${method}" = 408 ]
     then
-      printf "$format" "$hits" "$ip" "$method" "$response" "$uri"
+      printf "$format" "$hits" "$ip" "$method"
   fi
 }
 
@@ -287,7 +287,7 @@ tableSuspectUri() {
 ###########################
 tableTimeOut() {
   printf "${cyan}The following requests timed out.\n${normal}"
-  printf "${bold}| Hits | IP %13s| Method %1s | Response %2s| %s URI ${normal}\n"
+  printf "${bold}| Hits %s | IP %13s| Response %s${normal}\n"
   while read -r hits ip method response uri;
     do
       timedOut
