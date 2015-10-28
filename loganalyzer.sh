@@ -338,10 +338,10 @@ tableCountMethods() {
 ################################
 tableTopTalkers() {
   printf "${cyan}The following are the top 10 cumulative totals of bytes transferred per unique IP \n${normal}"
-  printf "${bold}| IP %13s| Method %s | Response %s| %s Total Bytes | URI %s${normal}\n"
-  while read -r ip method response bytes uri;
+  printf "${bold}| IP %13s| Method %s | Response %s| %s Total Bytes ${normal}\n"
+  while read -r ip method response bytes;
     do
-      printf "| %15s | %7s | %8s | %12s | %20s \n" "$ip" "$method" "$response" "$bytes" "$uri"
+      printf "| %15s | %7s | %8s | %12s | %20s \n" "$ip" "$method" "$response" "$bytes"
     done < $transferredb
 }
 
