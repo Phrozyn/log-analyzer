@@ -201,18 +201,18 @@ getInfoOfUri() {
   if [ -e results.txt ]
     then
       sed -i -e 's/\(\.\)\, /\1/g' -e 's/\([a-z\.\,]\) \([A-Za-z]\)/\1_\2/g' -e 's/\(\.\) \([A-Za-z]\)/\1_\2/g' results.txt
-                        sed -i -e 's/,/ /g' results.txt
+      sed -i -e 's/,/ /g' -e 's/\([a-z]\) \([a-z]\)/\1_\2/g' -e 's/ \- \([A-Z]\)/ \1/g' -e 's/ \(_[A-Z]\)/\1/g' results.txt
       sort -k 2 -o  "$suspect" "$suspect"
       sort -k 2 -o results.txt results.txt
-      awk -v var="$suspect" '{getline f1 <var; print f1, $1 " "$5" "$6 $7 $8 $9 $10 $11" "$12}' < results.txt > suspecturifinal.txt
+      awk -v var="$suspect" '{getline f1 <var; print f1, $1 " "$5" "$6" "$7}' < results.txt > suspecturifinal.txt
   fi
 }
 
 printSuspectUri() {
-  format="| %4s | %15s | %50s | %7s | %10s | %25s %5s | %5s\n"
-  while read -r hits ipadd uri method asn asnorg cc
+  format="| %4s | %15s | %50s | %7s | %10s | %25s | %27s | %s\n"
+  while read -r hits ipadd uri method asn asnid org cc
     do
-      printf "$format" "$hits" "$ipadd" "$uri" "$method" "$asn" "$asnorg" "$cc"
+      printf "$format" "$hits" "$ipadd" "$uri" "$method" "$asn" "$asnid" "$org" "$cc"
     done < suspecturifinal.txt
 }
 
@@ -271,12 +271,13 @@ table403() {
 #########################
 tableSuspectUri() {
   printf "${cyan}Access to the following suspect uri's were attempted. Their ASN, ISP, and Country Code is appended.${normal}\n"
-  printf "${bold}| Hits | IP %13s| Method %1s | URI %39s | Response %8s | %s WHOIS  ASN     |  ISP,CC${normal}\n"
+  printf "${bold}| Hits | IP %13s| URI %46s | Method %s | %s WHOIS ASN | %8s ASN ID %9s | ORG %23s | CC %s${normal}\n"
   while read -r hits ip method uri http_ver response;
     do
       getSuspectUri
     done < $sortedips
-        getInfoOfUri
+  getInfoOfUri
+  printSuspectUri
 
 }
 
