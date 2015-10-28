@@ -33,7 +33,7 @@ file=$1
 bold=$(tput bold)
 cyan=$(tput setf 3)
 normal=$(tput sgr0)
-reqmethod=(CONNECT POST GET HEAD CONNECT PUT DELETE TRACE)
+reqmethod=(POST GET HEAD CONNECT PUT DELETE TRACE)
 
 # linebreak function so I don't have to repeat the ugly dashed line.
 linebreak() {
