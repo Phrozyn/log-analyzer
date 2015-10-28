@@ -153,10 +153,10 @@ if [ -e $totalbytes ]
   then
     for i in `cat $totalbytes |awk '{print $1}' |sort -u`
       do
-        grep $i $totalbytes | awk '{c+=$5}END{print $1,$3,$4,c,$6}' >> $transfers
+        grep $i $totalbytes | awk '{c+=$7}END{print $1,$3,$6,c}' >> $transfers
       done
-      sort -rn $transfers -k4 >> $transferred
-      head $transferred >> $transferredb
+      sort -rnk 4,4 -o $transfers $transfers
+      head $transfers >> $transferredb
     else
       printf " The $totalbytes file was not found.\n"
 fi
