@@ -298,7 +298,7 @@ tableSuspectUri() {
 tableTimeOut() {
   printf "${cyan}The following requests timed out.\n${normal}"
   printf "${bold}| Hits %s | IP %13s| Response %s${normal}\n"
-  while read -r hits ip method response uri;
+  while read -r hits ip method uri http_ver response;
     do
       timedOut
     done < $sortedips
