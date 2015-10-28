@@ -328,7 +328,7 @@ tableCountMethods() {
   printf "${cyan}Methods used within this log${normal}\n"
   for i in "${reqmethod[@]}"
     do
-      printf "${bold}"$(grep -c $i $sortedips)"${normal} counts of ${bold}$i${normal} request method. \n"
+      printf "${bold}"$(grep -c $i $newfile)"${normal} counts of ${bold}$i${normal} request method. \n"
     done
 }
 
